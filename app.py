@@ -10,84 +10,95 @@ def index():
     return render_template('index.html')
 
 
+def is_identity(query):
+    keywords = ["who are you", "nee ara", "developer", "who made you"]
+    return any(k in query.lower() for k in keywords)
+
+
+def is_question(query):
+    q_words = ["who", "what", "when", "where", "why", "how", "aaranu", "entha"]
+    return any(w in query.lower() for w in q_words)
+
+
+def get_results(query):
+    for attempt in range(3):
+        try:
+            with DDGS() as ddgs:
+                return list(ddgs.text(query, max_results=6))
+        except Exception as e:
+            print(f"Retry {attempt+1}:", e)
+            time.sleep(1)
+    return []
+
+
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
-        user_data = request.get_json(force=True)
-        query = user_data.get("message", "").strip()
+        data = request.get_json(force=True)
+        query = data.get("message", "").strip()
 
         if not query:
-            return jsonify({"reply": "What should I search for, Boss? 🔍"}), 400
+            return jsonify({"reply": "Ask me something 🔍"}), 400
 
-        # 🧠 Identity Check
-        identity_keywords = [
-            "who are you", "nee ara", "developer",
-            "who created you", "who made you"
-        ]
-
-        if any(keyword in query.lower() for keyword in identity_keywords):
+        # 🧠 Identity
+        if is_identity(query):
             return jsonify({
                 "reply": "👋 I am Aira Web Search (AWS)\n"
-                         "🎁 Created by Adam as a special gift for my boss Razal\n"
-                         "🚀 Fast • Smart • Reliable Web Search Engine"
+                         "🎁 A special gift for Razal\n"
+                         "🚀 Smart • Fast • Web-powered"
             })
 
-        results = []
+        results = get_results(query)
 
-        # 🔁 Retry system (Render stability)
-        for attempt in range(3):
-            try:
-                with DDGS() as ddgs:
-                    results = list(ddgs.text(
-                        query,
-                        max_results=6,
-                        region="in-en",
-                        safesearch="moderate"
-                    ))
-
-                if results:
-                    break
-
-            except Exception as e:
-                print(f"Attempt {attempt+1} failed:", e)
-                time.sleep(1)
-
-        # ❌ No results fallback
         if not results:
             return jsonify({
-                "reply": "Sorry Boss, I couldn't find strong results. Try another search 🔍",
-                "sources": []
+                "reply": "😕 No strong results found. Try again!"
             })
 
-        # 🧾 Clean formatting
-        search_reply = "🔍 Boss, here’s what I found from the web:\n\n"
         clean_sources = []
 
-        for i, r in enumerate(results, 1):
-            title = r.get("title", "No title")
-            snippet = r.get("body", "")
-            link = r.get("href", "")
+        # 🧠 Smart Answer Mode
+        if is_question(query):
+            best = results[0]
 
-            if len(snippet) < 25:
-                continue
+            answer = best.get("body", "")
+            title = best.get("title", "")
+            link = best.get("href", "")
 
-            search_reply += f"{i}. {title}\n{snippet}\n\n"
+            reply = f"🧠 {answer}\n\n🔗 {title}"
 
             clean_sources.append({
                 "title": title,
                 "link": link
             })
 
+        else:
+            # 🔍 Search Mode
+            reply = "🔍 Results:\n\n"
+
+            for i, r in enumerate(results, 1):
+                title = r.get("title", "")
+                snippet = r.get("body", "")
+                link = r.get("href", "")
+
+                if len(snippet) < 25:
+                    continue
+
+                reply += f"{i}. {title}\n{snippet}\n\n"
+
+                clean_sources.append({
+                    "title": title,
+                    "link": link
+                })
+
         return jsonify({
-            "reply": search_reply.strip(),
+            "reply": reply.strip(),
             "sources": clean_sources
         })
 
     except Exception as e:
-        print(f"Search Error: {e}")
-        return jsonify({
-            "reply": "AWS Engine encountered a technical issue. ⚠️"
-        })
+        print("Error:", e)
+        return jsonify({"reply": "⚠️ Something went wrong"})
 
 
 if __name__ == "__main__":
