@@ -1,4 +1,4 @@
 flask
 requests
 gunicorn
-duckduckgo-search
+duckduckgo-search>=6.0.0
