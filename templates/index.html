@@ -2,67 +2,126 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AWS - Razal Edition</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-    body { background: #131314; color: #e8eaed; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #3c4043; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
+    
+    html, body { 
+      height: 100%; 
+      width: 100%; 
+      overflow: hidden; 
+      background: #131314; 
+    }
+
+    body { display: flex; flex-direction: column; color: #e8eaed; }
+
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #3c4043; flex-shrink: 0; }
     .logo { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 500; }
     .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #8b5cf6, #10a37f); border-radius: 8px; display: grid; place-items: center; font-weight: 700; color: white; }
-    .content { flex: 1; overflow-y: auto; padding: 20px 16px; }
-    .query-bubble { background: #2d2e30; padding: 12px 16px; border-radius: 20px; width: fit-content; margin-left: auto; margin-bottom: 20px; max-width: 85%; }
+
+    .content { flex: 1; overflow-y: auto; padding: 20px 16px; -webkit-overflow-scrolling: touch; }
+    
+    .query-bubble { background: #2d2e30; padding: 12px 16px; border-radius: 20px; width: fit-content; margin-left: auto; margin-bottom: 20px; max-width: 85%; line-height: 1.4; animation: fadeIn 0.3s; }
     .ai-response { margin-bottom: 25px; animation: fadeIn 0.4s ease; }
     .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #8b5cf6; font-weight: 500; }
-    .bottom-section { padding: 12px 16px; background: #131314; border-top: 1px solid #3c4043; }
+
+    .bottom-section { padding: 12px 16px; background: #131314; border-top: 1px solid #3c4043; flex-shrink: 0; }
     .input-bar { background: #2d2e30; border: 1px solid #3c4043; border-radius: 28px; padding: 8px 16px; display: flex; align-items: center; gap: 12px; }
-    .input-bar input { flex: 1; background: none; border: none; outline: none; color: #e8eaed; font-size: 16px; }
-    
-    /* Logo Animation */
+    .input-bar input { flex: 1; background: none; border: none; outline: none; color: #e8eaed; font-size: 16px; width: 100%; }
+
+    /* Multi-Logo Search Animation */
     .aws-searching { display: flex; align-items: center; gap: 12px; color: #9aa0a6; font-size: 14px; margin-bottom: 15px; }
-    .logo-container { position: relative; width: 20px; height: 20px; }
-    .logo-swap { position: absolute; width: 100%; height: 100%; opacity: 0; animation: logoFade 3s infinite; }
-    .logo-swap:nth-child(2) { animation-delay: 1.5s; }
-    @keyframes logoFade { 0% { opacity: 0; } 20% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 0; } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .logo-container { position: relative; width: 24px; height: 24px; overflow: hidden; border-radius: 4px; }
+    .logo-slide { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; animation: slideLogos 3s infinite steps(5); }
+    .logo-slide img { width: 24px; height: 24px; flex-shrink: 0; padding: 2px; }
+
+    @keyframes slideLogos {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-120px); } /* 24px * 5 logos */
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
   <div class="top-bar">
     <div class="logo"><div class="logo-icon">A</div><span>Aira Web Search</span></div>
-    <div style="width:32px; height:32px; background:#8b5cf6; border-radius:50%;"></div>
+    <div style="width:32px; height:32px; background:#8b5cf6; border-radius:50%; display: grid; place-items: center; font-weight: bold;">R</div>
   </div>
+  
   <div class="content" id="chatContent">
     <div class="ai-response">
       <div class="ai-header"><span>✦</span> AWS</div>
-      <div>ഹലോ റസൽ ബോസ്സ്, ഞാൻ റെഡിയാണ്! എന്താണ് വെബ്ബിൽ തിരയേണ്ടത്?</div>
+      <div id="initial-text">ഹലോ റസൽ ബോസ്സ്, ഞാൻ റെഡിയാണ്! ഇന്ന് എന്താണ് തിരയേണ്ടത്?</div>
     </div>
   </div>
-  <div class="bottom-section">
+
+  <div class="bottom-section" id="bottomSection">
     <div class="input-bar">
-      <input type="text" placeholder="AWS search..." id="userInput">
+      <input type="text" placeholder="Type here..." id="userInput" autocomplete="off">
       <span class="material-symbols-outlined" style="color:#8b5cf6; cursor:pointer;" onclick="makeSearch()">send</span>
     </div>
   </div>
+
   <script>
+    // ⌨️ Keyboard Fix: Adjusting viewport height for mobile keyboards
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        document.body.style.height = window.visualViewport.height + 'px';
+        window.scrollTo(0, 0);
+        scrollToBottom();
+      });
+    }
+
+    function scrollToBottom() {
+      const content = document.getElementById('chatContent');
+      content.scrollTop = content.scrollHeight;
+    }
+
+    function typeWriter(text, elementId) {
+      let i = 0;
+      const element = document.getElementById(elementId);
+      function type() {
+        if (i < text.length) {
+          element.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(type, 20);
+          scrollToBottom();
+        }
+      }
+      type();
+    }
+
     async function makeSearch() {
       const input = document.getElementById('userInput');
       const content = document.getElementById('chatContent');
       const query = input.value.trim();
       if (!query) return;
+      
       input.value = '';
+      input.blur(); // Keyboard hide on send (optional)
+      
       content.innerHTML += `<div class="query-bubble">${query}</div>`;
       const searchId = "search-" + Date.now();
+      const responseId = "resp-" + Date.now();
+
       content.innerHTML += `
         <div class="aws-searching" id="${searchId}">
           <div class="logo-container">
-            <img src="https://www.google.com/favicon.ico" class="logo-swap">
-            <img src="https://duckduckgo.com/favicon.ico" class="logo-swap">
+            <div class="logo-slide">
+              <img src="https://www.google.com/favicon.ico">
+              <img src="https://duckduckgo.com/favicon.ico">
+              <img src="https://www.bing.com/favicon.ico">
+              <img src="https://www.yahoo.com/favicon.ico">
+              <img src="https://www.baidu.com/favicon.ico">
+            </div>
           </div>
-          <span>AWS is fetching results...</span>
+          <span>AWS is scanning global engines...</span>
         </div>`;
-      content.scrollTop = content.scrollHeight;
+      
+      scrollToBottom();
+
       try {
         const response = await fetch('/chat', {
           method: 'POST',
@@ -70,15 +129,25 @@
           body: JSON.stringify({ message: query })
         });
         const data = await response.json();
-        document.getElementById(searchId).remove();
+        
+        const loader = document.getElementById(searchId);
+        if(loader) loader.remove();
+
         content.innerHTML += `
           <div class="ai-response">
             <div class="ai-header"><span>✦</span> AWS Results</div>
-            <div style="line-height:1.6;">${data.reply}</div>
+            <div id="${responseId}" style="line-height:1.6;"></div>
           </div>`;
-        content.scrollTop = content.scrollHeight;
-      } catch (e) { document.getElementById(searchId).innerHTML = "Error."; }
+        
+        typeWriter(data.reply, responseId);
+      } catch (e) { 
+        if(document.getElementById(searchId)) document.getElementById(searchId).innerHTML = "Error fetching data."; 
+      }
     }
+
+    document.getElementById('userInput').addEventListener('keypress', (e) => {
+      if(e.key === 'Enter') makeSearch();
+    });
   </script>
 </body>
 </html>
