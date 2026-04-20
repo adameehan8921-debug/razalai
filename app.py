@@ -20,7 +20,7 @@ def chat():
         identity_queries = ["who are you", "nee ara", "നിങ്ങൾ ആരാണ്", "njan ara"]
         if any(q in user_message.lower() for q in identity_queries):
             return jsonify({
-                "reply": "ഞാൻ Aira Web Search (AWS). ആദം (Aira Group) ഉണ്ടാക്കി എന്റെ ബോസ്സായ റസലിന് സമ്മാനമായി നൽകിയതാണ് ഞാൻ! 🚀"
+                "reply": "ഞാൻ Aira Web Search (AWS). ആദം (Aira Group) ഉണ്ടാക്കി എന്റെ ബോസ്സായ റസലിന് സമ്മാനമായി നൽകിയതാണ് ഞാൻ! ഞാൻ ആണ് ലോകത്തെ മൂന്നാമത്തെ Ai based Search enginee 🤖🌐🚀"
             })
 
         # 🦆 DuckDuckGo Instant Answer API
