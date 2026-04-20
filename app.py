@@ -10,81 +10,86 @@ def index():
     return render_template('index.html')
 
 
-def fetch_results(query):
-    results_list = []
-
-    with DDGS() as ddgs:
-        # 🔍 Normal search
-        text_results = list(ddgs.text(query, max_results=15))
-
-        # 📰 News search (extra quality)
-        news_results = list(ddgs.news(query, max_results=5))
-
-        combined = text_results + news_results
-
-        seen_links = set()
-
-        for r in combined:
-            link = r.get("href", "")
-
-            # ❌ skip duplicates
-            if not link or link in seen_links:
-                continue
-
-            seen_links.add(link)
-
-            title = r.get("title", "No title")
-            snippet = r.get("body", "")
-
-            # ❌ skip low-quality junk
-            if len(snippet) < 30:
-                continue
-
-            results_list.append({
-                "title": title,
-                "snippet": snippet,
-                "link": link
-            })
-
-    return results_list
-
-
-@app.route('/search', methods=['POST'])
-def search():
+@app.route('/chat', methods=['POST'])
+def chat():
     try:
-        data = request.get_json(force=True)
-        query = data.get("query", "").strip()
+        user_data = request.get_json(force=True)
+        query = user_data.get("message", "").strip()
 
         if not query:
-            return jsonify({"error": "Empty query"}), 400
+            return jsonify({"reply": "What should I search for, Boss? 🔍"}), 400
 
-        results_list = []
+        # 🧠 Identity Check
+        identity_keywords = [
+            "who are you", "nee ara", "developer",
+            "who created you", "who made you"
+        ]
 
-        # 🔁 Retry system (important for Render stability)
+        if any(keyword in query.lower() for keyword in identity_keywords):
+            return jsonify({
+                "reply": "👋 I am Aira Web Search (AWS)\n"
+                         "🎁 Created by Adam as a special gift for my boss Razal\n"
+                         "🚀 Fast • Smart • Reliable Web Search Engine"
+            })
+
+        results = []
+
+        # 🔁 Retry system (Render stability)
         for attempt in range(3):
             try:
-                results_list = fetch_results(query)
+                with DDGS() as ddgs:
+                    results = list(ddgs.text(
+                        query,
+                        max_results=6,
+                        region="in-en",
+                        safesearch="moderate"
+                    ))
 
-                if results_list:
+                if results:
                     break
 
             except Exception as e:
                 print(f"Attempt {attempt+1} failed:", e)
-                time.sleep(1)  # wait before retry
+                time.sleep(1)
 
-        if not results_list:
-            return jsonify({"error": "No results found"}), 404
+        # ❌ No results fallback
+        if not results:
+            return jsonify({
+                "reply": "Sorry Boss, I couldn't find strong results. Try another search 🔍",
+                "sources": []
+            })
+
+        # 🧾 Clean formatting
+        search_reply = "🔍 Boss, here’s what I found from the web:\n\n"
+        clean_sources = []
+
+        for i, r in enumerate(results, 1):
+            title = r.get("title", "No title")
+            snippet = r.get("body", "")
+            link = r.get("href", "")
+
+            if len(snippet) < 25:
+                continue
+
+            search_reply += f"{i}. {title}\n{snippet}\n\n"
+
+            clean_sources.append({
+                "title": title,
+                "link": link
+            })
 
         return jsonify({
-            "query": query,
-            "results": results_list[:10]  # top 10 clean results
+            "reply": search_reply.strip(),
+            "sources": clean_sources
         })
 
     except Exception as e:
-        print("Server Error:", e)
-        return jsonify({"error": "Server error"}), 500
+        print(f"Search Error: {e}")
+        return jsonify({
+            "reply": "AWS Engine encountered a technical issue. ⚠️"
+        })
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=True)
